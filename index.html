@@ -1,0 +1,1246 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>動物猜猜看互動教室</title>
+  <style>
+    :root {
+      --paper: #fffaf0;
+      --ink: #18251f;
+      --muted: #69766f;
+      --line: rgba(38, 54, 45, .14);
+      --leaf: #266a4f;
+      --leaf-soft: #dff0e4;
+      --sun: #f2b84b;
+      --sun-soft: #fff0ca;
+      --coral: #dc6d55;
+      --coral-soft: #ffe0d4;
+      --sky: #477ca8;
+      --sky-soft: #e3eef8;
+      --violet: #6f5d92;
+      --shadow: 0 18px 42px rgba(24, 37, 31, .14);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+      background:
+        linear-gradient(115deg, rgba(38,106,79,.16) 0 16%, transparent 16% 100%),
+        linear-gradient(72deg, transparent 0 72%, rgba(71,124,168,.16) 72% 100%),
+        linear-gradient(180deg, #f9f2df 0%, #eef5e9 100%);
+    }
+
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      width: min(1220px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 26px 0 44px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 310px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(255,250,240,.94), rgba(255,250,240,.74)),
+        linear-gradient(90deg, rgba(38,106,79,.2), rgba(242,184,75,.18));
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 24px;
+      align-items: stretch;
+      padding: 26px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 110px;
+      background:
+        linear-gradient(135deg, transparent 0 20%, rgba(38,106,79,.22) 20% 23%, transparent 23%),
+        linear-gradient(35deg, transparent 0 38%, rgba(220,109,85,.22) 38% 41%, transparent 41%),
+        linear-gradient(180deg, transparent, rgba(38,106,79,.13));
+      clip-path: polygon(0 64%, 9% 48%, 20% 62%, 34% 36%, 49% 62%, 64% 43%, 76% 60%, 89% 40%, 100% 58%, 100% 100%, 0 100%);
+    }
+
+    .hero-copy, .hero-stage { position: relative; z-index: 1; }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--leaf);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .08em;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 0;
+      font-size: clamp(38px, 6vw, 78px);
+      line-height: .95;
+      letter-spacing: 0;
+    }
+
+    .hero-copy p {
+      max-width: 690px;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--ink);
+      background: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 9px 18px rgba(24, 37, 31, .12); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn:focus-visible,
+    .choice:focus-visible,
+    .animal-card button:focus-visible,
+    input:focus-visible {
+      outline: 4px solid rgba(242, 184, 75, .62);
+      outline-offset: 3px;
+    }
+    .btn.primary { background: var(--leaf); color: #fff; }
+    .btn.sun { background: var(--sun); color: #2c2110; }
+    .btn.coral { background: var(--coral); color: #fff; }
+    .btn.sky { background: var(--sky); color: #fff; }
+    .btn.ghost { border-color: var(--line); background: rgba(255,255,255,.68); }
+    .btn.small { min-height: 34px; padding: 7px 10px; font-size: 13px; }
+    .btn[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+    .leader-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 22px;
+      max-width: 780px;
+    }
+
+    .leader-step {
+      min-height: 70px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.64);
+      padding: 10px 12px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+    }
+
+    .leader-step strong {
+      color: var(--leaf);
+      font-size: 15px;
+    }
+
+    .leader-step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .hero-stage {
+      min-height: 250px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--sun-soft);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    }
+
+    .hero-stage img {
+      width: 100%;
+      height: 100%;
+      min-height: 250px;
+      object-fit: cover;
+      object-position: 58% center;
+      display: block;
+    }
+
+    .mode {
+      display: none;
+      margin-top: 18px;
+    }
+
+    .mode.active { display: block; }
+
+    .riddle-layout {
+      display: block;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,250,240,.9);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .mystery-card {
+      min-height: 520px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      overflow: hidden;
+    }
+
+    .mystery-card.presentation {
+      min-height: 78vh;
+    }
+
+    .mystery-card.presentation .mystery-window {
+      min-height: min(70vh, 720px);
+    }
+
+    .mystery-card.presentation .question {
+      font-size: clamp(34px, 4.8vw, 72px);
+    }
+
+    .mystery-card.presentation .answer-name {
+      font-size: clamp(72px, 11vw, 150px);
+    }
+
+    .mystery-card.presentation .clue {
+      font-size: clamp(20px, 2.2vw, 34px);
+      padding: 14px 18px;
+    }
+
+    .mystery-card:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      border-radius: 0;
+      background:
+        linear-gradient(115deg, rgba(38,106,79,.16) 0 16%, transparent 16% 100%),
+        linear-gradient(180deg, #fffaf0 0%, #eef5e9 100%);
+      padding: 24px;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      gap: 12px;
+    }
+
+    .mystery-card:fullscreen .mystery-window {
+      min-height: 0;
+      height: 100%;
+      padding: 16px;
+    }
+
+    .mystery-card:fullscreen .status-card {
+      padding: 8px 12px;
+      font-size: 18px;
+    }
+
+    .mystery-card:fullscreen .mystery-content {
+      grid-template-rows: auto auto auto;
+      align-content: start;
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .mystery-card:fullscreen .mystery-heading {
+      grid-template-columns: 112px 1fr;
+      gap: 16px;
+    }
+
+    .mystery-card:fullscreen .mystery-symbol {
+      width: 112px;
+      font-size: 56px;
+    }
+
+    .mystery-card:fullscreen .question {
+      font-size: clamp(44px, 5.2vw, 84px);
+      line-height: 1.02;
+    }
+
+    .mystery-card:fullscreen .answer-name {
+      font-size: clamp(58px, 7vw, 116px);
+    }
+
+    .mystery-card:fullscreen .clues {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .mystery-card:fullscreen .clue {
+      min-height: 96px;
+      font-size: clamp(30px, 3vw, 52px);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      line-height: 1.24;
+    }
+
+    .mystery-card:fullscreen .game-box {
+      align-self: start;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .mystery-card:fullscreen .choice-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .mystery-card:fullscreen .choice {
+      min-height: 96px;
+      font-size: clamp(24px, 2.3vw, 38px);
+      padding: 14px 16px;
+    }
+
+    .mystery-card:fullscreen .choice small {
+      font-size: .58em;
+    }
+
+    .mystery-card:fullscreen .actions {
+      padding-top: 0;
+    }
+
+    .mystery-card:fullscreen .fullscreen-note {
+      display: none;
+    }
+
+    .card-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .status-card {
+      border-radius: 8px;
+      border: 1px solid rgba(38, 54, 45, .12);
+      background: linear-gradient(135deg, rgba(223,240,228,.78), rgba(255,240,202,.58));
+      padding: 12px 14px;
+      color: var(--leaf);
+      font-weight: 900;
+      line-height: 1.45;
+    }
+
+    .pill {
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--leaf);
+      background: var(--leaf-soft);
+      font-weight: 900;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .mystery-window {
+      position: relative;
+      min-height: 560px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(71,124,168,.16), transparent 48%),
+        linear-gradient(135deg, var(--sun-soft), var(--leaf-soft));
+      overflow: hidden;
+      display: grid;
+      align-items: stretch;
+      padding: 18px;
+    }
+
+    .mystery-window::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 72px;
+      background: rgba(38,106,79,.22);
+      clip-path: polygon(0 62%, 12% 42%, 25% 60%, 38% 36%, 54% 62%, 70% 43%, 86% 64%, 100% 48%, 100% 100%, 0 100%);
+    }
+
+    .mystery-content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .mystery-symbol {
+      width: 138px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: var(--violet);
+      box-shadow: 0 20px 36px rgba(111,93,146,.22);
+      font-size: 72px;
+      font-weight: 950;
+    }
+
+    .mystery-symbol.hidden-answer { filter: blur(9px); }
+
+    .mystery-heading {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .question {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .answer-name {
+      margin: 0;
+      font-size: clamp(44px, 8vw, 86px);
+      line-height: .95;
+      letter-spacing: 0;
+      display: none;
+    }
+
+    .answer-name.show { display: block; }
+    .latin {
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 800;
+      display: none;
+    }
+    .latin.show { display: block; }
+
+    .clues {
+      display: grid;
+      gap: 10px;
+    }
+
+    .clue {
+      min-height: 54px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.68);
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .clue.locked {
+      color: rgba(24,37,31,.42);
+      background: repeating-linear-gradient(135deg, rgba(255,255,255,.68), rgba(255,255,255,.68) 10px, rgba(223,240,228,.8) 10px, rgba(223,240,228,.8) 20px);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .fact {
+      padding: 18px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      line-height: 1.55;
+      font-size: clamp(22px, 2.6vw, 36px);
+      font-weight: 800;
+    }
+
+    .fact strong {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--coral-soft);
+      color: var(--coral);
+      margin-right: 10px;
+      font-size: .82em;
+    }
+
+    .side-title {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .game-box {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(38, 54, 45, .16);
+      background: rgba(255,250,240,.78);
+      box-shadow: 0 12px 24px rgba(24,37,31,.08);
+    }
+
+    .game-box .side-title { margin-bottom: 0; }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .choice {
+      min-height: 74px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.74);
+      cursor: pointer;
+      text-align: left;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.18;
+      transition: border-color .16s ease, transform .16s ease, background .16s ease;
+    }
+
+    .choice:hover { border-color: rgba(38,106,79,.45); transform: translateY(-1px); }
+
+    .choice small {
+      display: block;
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .choice.correct { background: var(--leaf-soft); border-color: var(--leaf); color: var(--leaf); font-weight: 900; }
+    .choice.wrong { background: var(--coral-soft); border-color: var(--coral); color: var(--coral); }
+    .choice:disabled { cursor: default; opacity: .86; transform: none; }
+
+    .fullscreen-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      margin: -6px 0 0;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background: rgba(24, 37, 31, .45);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-card {
+      width: min(1120px, 96vw);
+      max-height: min(900px, calc(100vh - 56px));
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.6);
+      background:
+        linear-gradient(135deg, rgba(255,250,240,.98), rgba(255,240,202,.96)),
+        var(--paper);
+      box-shadow: 0 28px 70px rgba(0,0,0,.28);
+      padding: clamp(24px, 3vw, 42px);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: clamp(44px, 6vw, 86px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .modal-subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: clamp(18px, 2vw, 30px);
+    }
+
+    .modal-facts {
+      display: grid;
+      gap: 16px;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .modal-actions .btn,
+    .modal-head .btn {
+      min-height: 52px;
+      font-size: 20px;
+      font-weight: 850;
+    }
+
+    .browse-tools {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .browse-intro {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(223,240,228,.62);
+      border: 1px solid rgba(38, 54, 45, .12);
+    }
+
+    .browse-intro strong {
+      display: block;
+      color: var(--leaf);
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+
+    .browse-intro span {
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    input {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 12px;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .animal-card {
+      min-height: 254px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .animal-card:hover { border-color: rgba(38,106,79,.45); box-shadow: 0 12px 24px rgba(24,37,31,.08); }
+
+    .animal-head {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mini-mark {
+      width: 58px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sky-soft);
+      color: var(--sky);
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      font-weight: 950;
+    }
+
+    .animal-card h3 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+    }
+
+    .animal-card small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .theme {
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .tiny-facts {
+      margin: 0;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      min-height: 180px;
+      border-radius: 8px;
+      border: 1px dashed rgba(38, 54, 45, .24);
+      background: rgba(255,255,255,.56);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+      line-height: 1.6;
+      font-weight: 800;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 960px) {
+      .hero, .riddle-layout { grid-template-columns: 1fr; }
+      .hero-stage { min-height: 210px; }
+      .browse-tools { grid-template-columns: 1fr; }
+      .browse-intro { grid-template-columns: 1fr; }
+      .leader-strip { grid-template-columns: 1fr; }
+    }
+
+    @media (max-height: 820px) {
+      .mystery-card:fullscreen {
+        padding: 18px;
+        gap: 10px;
+      }
+
+      .mystery-card:fullscreen .mystery-window {
+        padding: 12px;
+      }
+
+      .mystery-card:fullscreen .question {
+        font-size: clamp(36px, 4.4vw, 68px);
+      }
+
+      .mystery-card:fullscreen .mystery-symbol {
+        width: 88px;
+        font-size: 44px;
+      }
+
+      .mystery-card:fullscreen .mystery-heading {
+        grid-template-columns: 88px 1fr;
+      }
+
+      .mystery-card:fullscreen .clue {
+        min-height: 78px;
+        font-size: clamp(24px, 2.35vw, 38px);
+        padding: 14px 18px;
+      }
+
+      .mystery-card:fullscreen .choice {
+        min-height: 78px;
+        font-size: clamp(21px, 1.9vw, 30px);
+      }
+
+      .mystery-card:fullscreen .side-title,
+      .mystery-card:fullscreen .theme {
+        margin: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app { width: min(100% - 18px, 1220px); padding-top: 12px; }
+      .hero, .panel { padding: 14px; }
+      .hero { min-height: auto; gap: 14px; }
+      h1 { font-size: clamp(36px, 12vw, 52px); }
+      .hero-copy p { font-size: 15px; line-height: 1.55; }
+      .leader-strip { margin-top: 14px; }
+      .leader-step { min-height: 58px; }
+      .mystery-card { gap: 12px; }
+      .mystery-window { min-height: auto; padding: 12px; }
+      .mystery-heading { grid-template-columns: 1fr; }
+      .mystery-symbol { width: 96px; font-size: 48px; }
+      .question { font-size: 30px; }
+      .clue { font-size: 18px; }
+      .game-box { padding: 12px; }
+      .choice-grid { grid-template-columns: 1fr; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .actions .btn, .actions .video-link { width: 100%; }
+      .actions .btn.coral, .actions .btn.sky { grid-column: span 1; }
+      .btn { width: 100%; }
+      .filter-row .btn, .card-actions .btn { width: auto; }
+      .card-actions .btn { flex: 1 1 100%; }
+      .gallery { grid-template-columns: 1fr; }
+      .hero-stage img { min-height: 190px; }
+      .modal { padding: 12px; }
+      .modal-head { display: grid; }
+      .modal-card { max-height: calc(100vh - 24px); }
+      .fact { font-size: 20px; padding: 14px; }
+      .fact strong { width: 34px; height: 34px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">ANIMAL RIDDLE CLASSROOM</p>
+        <h1>動物猜猜看互動教室</h1>
+        <p>老師可以先用線索帶大家猜是哪一種動物，揭曉後看短影音、聊三個冷知識；也可以直接進入圖庫自由瀏覽、播放影片或指定題目來玩。</p>
+        <div class="mode-tabs" role="tablist" aria-label="互動模式">
+          <button class="btn primary" id="riddleTab" aria-pressed="true">猜謎模式</button>
+          <button class="btn ghost" id="browseTab" aria-pressed="false">自由瀏覽模式</button>
+        </div>
+        <div class="leader-strip" aria-label="帶領流程">
+          <div class="leader-step"><strong>1. 先給線索</strong><span>逐步揭開，讓團體一起猜。</span></div>
+          <div class="leader-step"><strong>2. 選答案</strong><span>四個大選項，答對才揭曉。</span></div>
+          <div class="leader-step"><strong>3. 看冷知識</strong><span>彈窗放大，適合投影分享。</span></div>
+        </div>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <img src="assets/animal-banner.png" alt="" />
+      </div>
+    </header>
+
+    <main>
+      <section class="mode active" id="riddleMode">
+        <div class="riddle-layout">
+          <article class="panel mystery-card" id="mysteryCard" aria-labelledby="riddleTitle">
+            <div class="card-top">
+              <span class="pill" id="roundPill">第 1 題</span>
+              <span class="pill" id="categoryPill">哺乳類</span>
+            </div>
+            <div class="status-card" id="statusCard" aria-live="polite">先揭開線索，讓大家觀察與猜測。</div>
+
+            <div class="mystery-window">
+              <div class="mystery-content">
+                <div class="mystery-heading">
+                  <div class="mystery-symbol hidden-answer" id="mysterySymbol">?</div>
+                  <div>
+                    <p class="question" id="riddleTitle">牠是誰？先從線索開始猜。</p>
+                    <h2 class="answer-name" id="answerName">獅子</h2>
+                    <div class="latin" id="answerEnglish">Lion</div>
+                  </div>
+                </div>
+                <div class="clues" id="clueList"></div>
+                <div class="game-box">
+                  <h2 class="side-title">快問快答</h2>
+                  <div class="pill" id="scorePill">答對 0 題</div>
+                  <p class="theme" id="gamePrompt">看線索後，讓大家選出答案。</p>
+                  <div class="choice-grid" id="choiceGrid"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn sun" id="revealClue">揭開一個線索</button>
+              <button class="btn primary" id="revealAnswer">揭曉答案</button>
+              <button class="btn ghost" id="zoomRiddle">放大題目</button>
+              <button class="btn ghost" id="fullscreenRiddle">全螢幕</button>
+              <button class="btn coral" id="nextRiddle">下一題</button>
+              <a class="btn sky hidden" id="riddleVideo" href="#" target="_blank" rel="noreferrer">觀看短影音</a>
+            </div>
+            <p class="fullscreen-note">放大題目會把線索框加大；全螢幕適合投影或讓大家一起看。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="mode" id="browseMode">
+        <div class="panel">
+          <div class="browse-intro">
+            <div>
+              <strong>50 種動物題庫</strong>
+              <span>可搜尋、分類、直接看影片，也能從任一動物開始猜謎。</span>
+            </div>
+            <button class="btn primary" id="randomBrowse">隨機出題</button>
+          </div>
+          <div class="browse-tools">
+            <input id="searchBox" placeholder="搜尋動物、英文名、影片主題或冷知識" aria-label="搜尋動物" />
+            <div class="filter-row" aria-label="分類篩選">
+              <button class="btn small primary" data-filter="all">全部</button>
+              <button class="btn small ghost" data-filter="哺乳類">哺乳類</button>
+              <button class="btn small ghost" data-filter="鳥類">鳥類</button>
+              <button class="btn small ghost" data-filter="爬蟲兩棲">爬蟲兩棲</button>
+              <button class="btn small ghost" data-filter="海洋">海洋</button>
+            </div>
+          </div>
+          <div class="gallery" id="gallery"></div>
+        </div>
+      </section>
+    </main>
+
+    <div class="modal" id="factsModal" role="dialog" aria-modal="true" aria-labelledby="factsTitle">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div>
+            <h2 class="modal-title" id="factsTitle">三個冷知識</h2>
+            <p class="modal-subtitle" id="factsSubtitle">答對後一起看</p>
+          </div>
+          <button class="btn ghost small" id="closeFacts" aria-label="關閉冷知識視窗">關閉</button>
+        </div>
+        <div class="modal-facts" id="factList"></div>
+        <div class="modal-actions">
+          <a class="btn sky" id="modalVideo" href="#" target="_blank" rel="noreferrer">觀看短影音</a>
+          <button class="btn coral" id="modalNext">下一題</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rawAnimals = [
+      ["獅子","Lion","哺乳類","雄獅吼叫或獅群互動","https://www.youtube.com/results?search_query=lion+roar+shorts",["群體生活，常由母獅合作狩獵。","雄獅鬃毛越深，通常代表成熟度與健康狀態。","牠們會用吼聲宣示領域，聲音能傳很遠。"],["有鬃毛的王者","常以群體方式生活","吼聲很有存在感"]],
+      ["老虎","Tiger","哺乳類","老虎游泳或近距離走動","https://www.youtube.com/results?search_query=tiger+swimming+shorts",["每隻老虎的條紋都像指紋一樣獨特。","老虎是很會游泳的大型貓科動物。","牠們通常偏好單獨行動。"],["身上有黑色條紋","很會游泳","常常獨自行動"]],
+      ["大象","Elephant","哺乳類","小象玩水或象群散步","https://www.youtube.com/results?search_query=baby+elephant+playing+shorts",["象鼻有大量肌肉，可拿東西也能吸水。","象群常由年長母象帶領。","牠們會用低頻聲音和遠方同伴溝通。"],["鼻子像靈活的工具","群體重視家族","腳步大但動作可以很細緻"]],
+      ["長頸鹿","Giraffe","哺乳類","長頸鹿吃葉子或慢動作奔跑","https://www.youtube.com/results?search_query=giraffe+eating+leaves+shorts",["牠的舌頭很長，能幫忙捲下樹葉。","脖子雖長，頸椎數量和多數哺乳類相近。","身上的斑紋也有助於辨認個體。"],["能吃到高處葉子","脖子非常長","斑紋像天然身分證"]],
+      ["斑馬","Zebra","哺乳類","斑馬奔跑或群體過河","https://www.youtube.com/results?search_query=zebra+running+shorts",["每隻斑馬的條紋排列都不同。","條紋可能有助於干擾昆蟲靠近。","斑馬常靠群體警戒降低危險。"],["黑白條紋很醒目","常成群奔跑","條紋不是每隻都一樣"]],
+      ["河馬","Hippopotamus","哺乳類","河馬張嘴或泡水","https://www.youtube.com/results?search_query=hippo+open+mouth+shorts",["河馬皮膚會分泌帶紅色的保護液。","牠們多半白天泡在水裡降溫。","雖然身形圓，但短距離衝刺很快。"],["喜歡泡在水中","嘴巴張開很巨大","外表圓但爆發力強"]],
+      ["犀牛","Rhinoceros","哺乳類","犀牛走路或泥浴","https://www.youtube.com/results?search_query=rhino+mud+bath+shorts",["犀牛角主要由角蛋白構成。","泥浴能幫牠們降溫並保護皮膚。","視力不算好，但嗅覺和聽覺敏銳。"],["鼻上有角","喜歡泥浴","靠嗅覺和聽覺警戒"]],
+      ["熊貓","Giant Panda","哺乳類","熊貓吃竹子或翻滾","https://www.youtube.com/results?search_query=panda+eating+bamboo+shorts",["熊貓的前掌有類似拇指的構造能抓竹子。","牠們每天會花很多時間吃竹子。","剛出生的幼崽非常小，和成年體型差距巨大。"],["愛吃竹子","黑白配色很明顯","拿竹子很靈巧"]],
+      ["無尾熊","Koala","哺乳類","無尾熊抱樹或吃尤加利葉","https://www.youtube.com/results?search_query=koala+eating+eucalyptus+shorts",["無尾熊主要吃尤加利葉。","牠們一天常睡很久來節省能量。","幼崽會待在育兒袋中成長。"],["常抱著樹幹","愛吃尤加利葉","睡眠時間很長"]],
+      ["袋鼠","Kangaroo","哺乳類","袋鼠跳躍或小袋鼠探頭","https://www.youtube.com/results?search_query=kangaroo+hopping+shorts",["袋鼠用強壯後腿跳躍前進。","尾巴能幫助平衡，也能支撐身體。","小袋鼠會在媽媽的育兒袋中成長。"],["用跳的前進","有育兒袋","尾巴像平衡桿"]],
+      ["樹懶","Sloth","哺乳類","樹懶慢動作移動或吃葉子","https://www.youtube.com/results?search_query=sloth+moving+shorts",["樹懶的新陳代謝很慢。","毛上可能長藻類，讓牠在樹上更不顯眼。","牠們大多時間倒掛在樹上。"],["動作很慢","常倒掛在樹上","身體像自帶偽裝"]],
+      ["狐獴","Meerkat","哺乳類","狐獴站哨或群體互動","https://www.youtube.com/results?search_query=meerkat+standing+shorts",["狐獴會輪流站哨警戒。","牠們住在複雜的地下洞穴系統。","群體中會有合作照顧幼崽的行為。"],["常站直看遠方","群體合作很明顯","住在地下洞穴"]],
+      ["水獺","Otter","哺乳類","水獺漂浮或敲貝殼","https://www.youtube.com/results?search_query=otter+floating+shorts",["海獺會使用石頭敲開貝類。","水獺毛非常濃密，能幫助保暖。","有些水獺休息時會牽著同伴避免漂走。"],["會在水上漂浮","手很靈巧","可能使用工具找食物"]],
+      ["企鵝","Penguin","鳥類","企鵝走路或跳水","https://www.youtube.com/results?search_query=penguin+walking+shorts",["企鵝不會飛，但很擅長游泳。","牠們的身形適合在水中快速前進。","有些企鵝會用小石頭築巢。"],["走路搖搖晃晃","不飛但會游泳","常成群活動"]],
+      ["北極熊","Polar Bear","哺乳類","北極熊游泳或玩雪","https://www.youtube.com/results?search_query=polar+bear+swimming+shorts",["北極熊皮膚其實是黑色的。","牠們有厚脂肪層幫助保暖。","腳掌寬大，適合在冰雪上行走和游泳。"],["生活在冰雪地帶","白色外表利於隱蔽","很會游泳"]],
+      ["棕熊","Brown Bear","哺乳類","棕熊抓魚或搔癢","https://www.youtube.com/results?search_query=brown+bear+catching+fish+shorts",["棕熊是雜食性動物。","在鮭魚季節，牠們會大量補充能量。","冬眠前會增加脂肪儲備。"],["體型壯碩","會抓魚","冬天前需要儲備能量"]],
+      ["狼","Wolf","哺乳類","狼嚎或狼群奔跑","https://www.youtube.com/results?search_query=wolf+howling+shorts",["狼嚎能幫助群體聯繫位置。","狼群有複雜的社會合作。","牠們能長距離奔跑追蹤獵物。"],["會嚎叫","重視群體合作","耐力很好"]],
+      ["狐狸","Fox","哺乳類","狐狸跳雪或覓食","https://www.youtube.com/results?search_query=fox+jumping+snow+shorts",["狐狸聽覺敏銳，能定位雪下的小動物。","牠們會用高高跳起再俯衝的方式捕食。","狐狸適應力強，能生活在多種環境。"],["耳朵靈敏","會跳起來捕食","行動靈活"]],
+      ["浣熊","Raccoon","哺乳類","浣熊洗手或找食物","https://www.youtube.com/results?search_query=raccoon+washing+hands+shorts",["浣熊前掌觸覺靈敏。","牠們常在水邊摸索食物。","適應力強，能在城市邊緣生活。"],["前掌像小手","常摸索食物","臉上像戴面罩"]],
+      ["刺蝟","Hedgehog","哺乳類","刺蝟捲球或吃點心","https://www.youtube.com/results?search_query=hedgehog+eating+shorts",["刺蝟遇到威脅時會捲成球。","牠身上的刺是變硬的毛。","牠們多在夜間活動。"],["身上有刺","遇到危險會縮起來","常在夜晚活動"]],
+      ["兔子","Rabbit","哺乳類","兔子跳躍或吃胡蘿蔔","https://www.youtube.com/results?search_query=rabbit+eating+carrot+shorts",["兔子的牙齒會持續生長。","耳朵能幫助散熱，也能偵測聲音。","後腿強壯，適合快速跳躍。"],["耳朵很長","用跳的前進","牙齒需要不斷磨耗"]],
+      ["松鼠","Squirrel","哺乳類","松鼠藏堅果或跳樹","https://www.youtube.com/results?search_query=squirrel+hiding+nuts+shorts",["松鼠會把食物藏在不同地點。","有些忘記的種子可能長成新植物。","牠們的尾巴有助於平衡。"],["會藏堅果","在樹間跳躍","尾巴蓬鬆"]],
+      ["鹿","Deer","哺乳類","鹿奔跑或小鹿跟媽媽","https://www.youtube.com/results?search_query=deer+running+shorts",["雄鹿鹿角會定期脫落再長出。","鹿的聽覺和嗅覺都很敏銳。","幼鹿身上的斑點有助於偽裝。"],["奔跑很輕快","有些會長角","警覺性高"]],
+      ["駱駝","Camel","哺乳類","駱駝行走或喝水","https://www.youtube.com/results?search_query=camel+walking+shorts",["駱駝的駝峰儲存脂肪，不是水。","牠們能適應乾燥炎熱環境。","長睫毛能幫助阻擋風沙。"],["背上有駝峰","很適應沙漠","睫毛能擋沙"]],
+      ["羊駝","Alpaca","哺乳類","羊駝吃草或表情特寫","https://www.youtube.com/results?search_query=alpaca+funny+shorts",["羊駝毛柔軟且保暖。","牠們會用姿勢和聲音溝通。","感到不安時可能會吐口水。"],["毛很蓬鬆","表情很有戲","可能用吐口水表達不滿"]],
+      ["美洲豹","Jaguar","哺乳類","美洲豹潛行或游泳","https://www.youtube.com/results?search_query=jaguar+swimming+shorts",["美洲豹咬合力很強。","牠們擅長游泳，也會在水邊活動。","身上的斑紋中常有小點。"],["斑點中帶小點","咬合力強","不怕水"]],
+      ["花豹","Leopard","哺乳類","花豹爬樹或狩獵動作","https://www.youtube.com/results?search_query=leopard+climbing+tree+shorts",["花豹很擅長爬樹。","牠們常把食物拖到樹上保存。","斑紋有助於在草木間隱藏。"],["會爬樹","身上有玫瑰狀斑紋","行動隱密"]],
+      ["獵豹","Cheetah","哺乳類","獵豹衝刺或幼豹玩耍","https://www.youtube.com/results?search_query=cheetah+running+shorts",["獵豹是陸地上速度最快的動物之一。","牠臉上的黑色淚線能減少反光。","高速奔跑後需要休息降溫。"],["跑得非常快","臉上有黑色淚線","衝刺後要休息"]],
+      ["猩猩","Orangutan","哺乳類","猩猩使用工具或照顧幼崽","https://www.youtube.com/results?search_query=orangutan+using+tools+shorts",["猩猩多半在樹上生活。","牠們會使用簡單工具。","幼崽會跟著媽媽學習很長時間。"],["手臂很長","會使用工具","常在樹上活動"]],
+      ["大猩猩","Gorilla","哺乳類","大猩猩捶胸或親子互動","https://www.youtube.com/results?search_query=gorilla+chest+beat+shorts",["大猩猩主要吃植物。","捶胸可能用來展示力量或溝通。","牠們有穩定的群體生活。"],["體型強壯","會捶胸","其實多吃植物"]],
+      ["黑猩猩","Chimpanzee","哺乳類","黑猩猩互動或學習動作","https://www.youtube.com/results?search_query=chimpanzee+funny+shorts",["黑猩猩會使用工具取食。","牠們有複雜的社交互動。","不同群體可能有不同習慣。"],["聰明又會學習","會用工具","社交關係複雜"]],
+      ["猴子","Monkey","哺乳類","猴子攀爬或搶食","https://www.youtube.com/results?search_query=monkey+climbing+shorts",["許多猴子用尾巴或四肢保持平衡。","牠們常以群體方式生活。","表情和叫聲能傳達很多訊息。"],["爬樹很靈活","常成群活動","表情很多"]],
+      ["狐猴","Lemur","哺乳類","狐猴跳躍或曬太陽","https://www.youtube.com/results?search_query=lemur+jumping+shorts",["狐猴主要分布在馬達加斯加。","有些狐猴會張開手臂曬太陽。","牠們用氣味標記領域。"],["尾巴很有存在感","會曬太陽","來自馬達加斯加"]],
+      ["貓頭鷹","Owl","鳥類","貓頭鷹轉頭或飛行","https://www.youtube.com/results?search_query=owl+head+turn+shorts",["貓頭鷹能大幅度轉動頭部。","牠們的飛行聲音很安靜。","眼睛朝前，能幫助判斷距離。"],["頭能轉很大角度","夜間活動常見","飛行很安靜"]],
+      ["老鷹","Eagle","鳥類","老鷹飛行或俯衝","https://www.youtube.com/results?search_query=eagle+flying+shorts",["老鷹視力非常敏銳。","牠們能利用上升氣流滑翔。","強壯爪子有助於抓取獵物。"],["視力很好","會高空盤旋","爪子強壯"]],
+      ["孔雀","Peacock","鳥類","孔雀開屏","https://www.youtube.com/results?search_query=peacock+dancing+shorts",["開屏多見於雄孔雀求偶展示。","尾羽上的眼斑能吸引注意。","孔雀其實能短距離飛行。"],["尾羽像扇子","開屏很華麗","能短距離飛行"]],
+      ["鸚鵡","Parrot","鳥類","鸚鵡說話或模仿聲音","https://www.youtube.com/results?search_query=parrot+talking+shorts",["鸚鵡擅長模仿聲音。","牠們的喙很適合剝開堅果或種子。","許多鸚鵡有很強的社交需求。"],["會模仿聲音","嘴喙很有力","喜歡社交"]],
+      ["火烈鳥","Flamingo","鳥類","火烈鳥群舞或單腳站立","https://www.youtube.com/results?search_query=flamingo+dance+shorts",["火烈鳥粉紅色來自食物中的色素。","牠們常單腳站立休息。","彎曲的喙適合濾食。"],["身體粉紅","常單腳站立","用特殊嘴喙濾食"]],
+      ["鴕鳥","Ostrich","鳥類","鴕鳥奔跑或好奇靠近","https://www.youtube.com/results?search_query=ostrich+running+shorts",["鴕鳥不會飛，但跑得很快。","牠們的蛋非常大。","強壯雙腿也能用來防禦。"],["鳥類但不會飛","跑步很快","蛋很大"]],
+      ["鱷魚","Crocodile","爬蟲兩棲","鱷魚張嘴或滑入水中","https://www.youtube.com/results?search_query=crocodile+open+mouth+shorts",["鱷魚會張嘴幫助調節體溫。","牠們能在水中安靜接近目標。","眼睛和鼻孔位在頭部上方，方便露出水面觀察。"],["會安靜滑入水中","嘴巴和牙齒很醒目","眼鼻長在頭頂附近"]],
+      ["短吻鱷","Alligator","爬蟲兩棲","短吻鱷游泳或曬太陽","https://www.youtube.com/results?search_query=alligator+swimming+shorts",["短吻鱷吻部通常較寬。","牠們會曬太陽調節體溫。","幼體會發出聲音呼喚母親。"],["吻部較寬","喜歡曬太陽","幼體會叫媽媽"]],
+      ["海龜","Sea Turtle","海洋","海龜游泳或小海龜入海","https://www.youtube.com/results?search_query=sea+turtle+swimming+shorts",["海龜用鰭狀前肢在海中游泳。","許多海龜會回到出生地附近產卵。","幼龜孵化後會朝海邊移動。"],["背著硬殼游泳","會上岸產卵","幼龜奔向海邊"]],
+      ["變色龍","Chameleon","爬蟲兩棲","變色龍變色或伸舌捕食","https://www.youtube.com/results?search_query=chameleon+catching+insect+shorts",["變色龍變色和情緒、溫度、溝通都有關。","牠的舌頭能快速伸出捕食。","兩隻眼睛可以分別轉動觀察。"],["會變色","舌頭伸得很快","眼睛能分開看"]],
+      ["鬣蜥","Iguana","爬蟲兩棲","鬣蜥曬太陽或爬行","https://www.youtube.com/results?search_query=iguana+walking+shorts",["鬣蜥需要曬太陽幫助調節體溫。","牠們背上常有一排明顯棘冠。","有些鬣蜥能游泳逃離危險。"],["背上有棘冠","喜歡曬太陽","行動像小恐龍"]],
+      ["蛇","Snake","爬蟲兩棲","蛇蛻皮或移動","https://www.youtube.com/results?search_query=snake+shedding+skin+shorts",["蛇會定期蛻皮成長。","牠們用舌頭收集氣味分子。","沒有外耳，但能感受震動。"],["沒有腳也能前進","會蛻皮","吐舌頭是在收集氣味"]],
+      ["青蛙","Frog","爬蟲兩棲","青蛙跳躍或鳴叫","https://www.youtube.com/results?search_query=frog+jumping+shorts",["青蛙皮膚需要保持濕潤。","牠們從蝌蚪變態成成蛙。","許多青蛙用叫聲吸引配偶或宣示領域。"],["會跳也會叫","小時候是蝌蚪","皮膚需要濕潤"]],
+      ["海豚","Dolphin","海洋","海豚跳躍或群游","https://www.youtube.com/results?search_query=dolphin+jumping+shorts",["海豚會用回聲定位感知環境。","牠們是群體性很高的哺乳類。","海豚需要浮出水面呼吸。"],["會躍出水面","用聲音感知環境","是海洋哺乳類"]],
+      ["鯨魚","Whale","海洋","鯨魚噴水或躍出水面","https://www.youtube.com/results?search_query=whale+breaching+shorts",["鯨魚用肺呼吸，需要浮上海面換氣。","有些鯨魚會唱出複雜聲音。","藍鯨是地球上體型最大的動物。"],["體型巨大","會噴出水霧","需要到海面呼吸"]],
+      ["鯊魚","Shark","海洋","鯊魚巡游或近距離鏡頭","https://www.youtube.com/results?search_query=shark+swimming+shorts",["鯊魚骨骼主要是軟骨。","牠們有敏銳嗅覺。","牙齒會不斷替換。"],["牙齒很有名","骨骼不是硬骨為主","嗅覺敏銳"]],
+      ["章魚","Octopus","海洋","章魚變色或鑽洞","https://www.youtube.com/results?search_query=octopus+changing+color+shorts",["章魚能快速改變皮膚顏色和質感。","牠們非常擅長從小縫隙鑽過。","章魚有高度靈活的腕足。"],["會變色偽裝","可以鑽過小洞","腕足很靈活"]]
+    ];
+
+    const animals = rawAnimals.map((item, index) => ({
+      id: index + 1,
+      name: item[0],
+      english: item[1],
+      category: item[2],
+      theme: item[3],
+      video: item[4],
+      facts: item[5],
+      clues: item[6]
+    }));
+
+    const state = {
+      mode: "riddle",
+      current: animals[0],
+      round: 1,
+      revealedClues: 0,
+      answerShown: false,
+      score: 0,
+      filter: "all",
+      gameChoices: [],
+      zoomed: false
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function sample(list, count) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy.slice(0, count);
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      $("riddleMode").classList.toggle("active", mode === "riddle");
+      $("browseMode").classList.toggle("active", mode === "browse");
+      $("riddleTab").setAttribute("aria-pressed", mode === "riddle");
+      $("browseTab").setAttribute("aria-pressed", mode === "browse");
+      $("riddleTab").className = mode === "riddle" ? "btn primary" : "btn ghost";
+      $("browseTab").className = mode === "browse" ? "btn primary" : "btn ghost";
+    }
+
+    function chooseAnimal(animal, reveal = false) {
+      state.current = animal;
+      state.revealedClues = reveal ? animal.clues.length : 0;
+      state.answerShown = reveal;
+      makeGameChoices();
+      renderRiddle();
+      if (reveal) showFactsModal();
+      if (state.mode !== "riddle") setMode("riddle");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function nextRiddle() {
+      state.round += 1;
+      const next = animals[Math.floor(Math.random() * animals.length)];
+      chooseAnimal(next, false);
+    }
+
+    function revealClue() {
+      state.revealedClues = Math.min(state.current.clues.length, state.revealedClues + 1);
+      renderRiddle();
+    }
+
+    function revealAnswer() {
+      state.answerShown = true;
+      state.revealedClues = state.current.clues.length;
+      renderRiddle();
+      showFactsModal();
+    }
+
+    function renderRiddle() {
+      const animal = state.current;
+      $("roundPill").textContent = `第 ${state.round} 題`;
+      $("categoryPill").textContent = animal.category;
+      $("answerName").textContent = animal.name;
+      $("answerEnglish").textContent = animal.english;
+      $("mysterySymbol").textContent = state.answerShown ? animal.name.slice(0, 1) : "?";
+      $("mysterySymbol").classList.toggle("hidden-answer", !state.answerShown);
+      $("riddleTitle").textContent = state.answerShown ? "答案揭曉！一起看影片和冷知識。" : "牠是誰？先從線索開始猜。";
+      $("answerName").classList.toggle("show", state.answerShown);
+      $("answerEnglish").classList.toggle("show", state.answerShown);
+      $("riddleVideo").classList.toggle("hidden", !state.answerShown);
+      $("riddleVideo").href = animal.video;
+      $("revealClue").disabled = state.answerShown || state.revealedClues >= animal.clues.length;
+      $("revealAnswer").textContent = state.answerShown ? "再看冷知識" : "揭曉答案";
+
+      $("clueList").innerHTML = animal.clues.map((clue, index) => {
+        const open = index < state.revealedClues || state.answerShown;
+        return `<div class="clue ${open ? "" : "locked"}">${open ? `線索 ${index + 1}：${clue}` : `線索 ${index + 1}：尚未揭開`}</div>`;
+      }).join("");
+
+      $("mysteryCard").classList.toggle("presentation", state.zoomed);
+      $("zoomRiddle").textContent = state.zoomed ? "縮小題目" : "放大題目";
+      if (state.answerShown) {
+        $("statusCard").textContent = `答案是 ${animal.name}。可以看冷知識、播放短影音，或前往下一題。`;
+      } else if (state.revealedClues === 0) {
+        $("statusCard").textContent = "先揭開線索，讓大家觀察與猜測。";
+      } else if (state.revealedClues < animal.clues.length) {
+        $("statusCard").textContent = `已揭開 ${state.revealedClues} 個線索，可以再揭一個，或讓大家先作答。`;
+      } else {
+        $("statusCard").textContent = "三個線索都已揭開，請大家從下方選項作答。";
+      }
+
+      renderChoices();
+    }
+
+    function showFactsModal() {
+      const animal = state.current;
+      $("factsTitle").textContent = `${animal.name}的三個冷知識`;
+      $("factsSubtitle").textContent = `${animal.english}｜${animal.category}`;
+      $("factList").innerHTML = animal.facts.map((fact, index) => (
+        `<div class="fact"><strong>${index + 1}</strong>${fact}</div>`
+      )).join("");
+      $("modalVideo").href = animal.video;
+      $("factsModal").classList.add("show");
+    }
+
+    function closeFactsModal() {
+      $("factsModal").classList.remove("show");
+    }
+
+    function makeGameChoices() {
+      const others = sample(animals.filter((animal) => animal.id !== state.current.id), 3);
+      state.gameChoices = sample([state.current, ...others], 4);
+    }
+
+    function renderChoices() {
+      $("scorePill").textContent = `答對 ${state.score} 題`;
+      $("gamePrompt").textContent = state.answerShown ? `答案是 ${state.current.name}，也可以再換一題。` : "看線索後，讓大家選出答案。";
+      $("choiceGrid").innerHTML = state.gameChoices.map((animal) => (
+        `<button class="choice ${state.answerShown && animal.id === state.current.id ? "correct" : ""}" data-choice="${animal.id}" ${state.answerShown ? "disabled" : ""}>${animal.name}<br><small>${animal.english}</small></button>`
+      )).join("");
+      document.querySelectorAll("[data-choice]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const picked = Number(button.dataset.choice);
+          const correct = picked === state.current.id;
+          button.classList.add(correct ? "correct" : "wrong");
+          if (correct) {
+            if (!state.answerShown) state.score += 1;
+            revealAnswer();
+          } else {
+            button.disabled = true;
+            $("gamePrompt").textContent = "再想一下，答對後才會揭曉答案和冷知識。";
+            $("statusCard").textContent = `不是 ${button.textContent.trim().split("\\n")[0]}，可以再請大家選一次。`;
+          }
+        });
+      });
+    }
+
+    function toggleZoom() {
+      state.zoomed = !state.zoomed;
+      renderRiddle();
+    }
+
+    async function toggleFullscreen() {
+      const card = $("mysteryCard");
+      try {
+        if (!document.fullscreenElement) {
+          state.zoomed = true;
+          renderRiddle();
+          await card.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (error) {
+        state.zoomed = true;
+        renderRiddle();
+      }
+    }
+
+    function renderGallery() {
+      const term = $("searchBox").value.trim().toLowerCase();
+      const list = animals.filter((animal) => {
+        const categoryMatch = state.filter === "all" || animal.category === state.filter;
+        const text = `${animal.name} ${animal.english} ${animal.theme} ${animal.facts.join(" ")}`.toLowerCase();
+        return categoryMatch && text.includes(term);
+      });
+      if (!list.length) {
+        $("gallery").innerHTML = `<div class="empty-state">找不到符合條件的動物。<br>可以換一個關鍵字，或按「全部」回到完整題庫。</div>`;
+        return;
+      }
+      $("gallery").innerHTML = list.map((animal) => `
+        <article class="animal-card">
+          <div class="animal-head">
+            <div class="mini-mark">${animal.name.slice(0, 1)}</div>
+            <div>
+              <h3>${animal.name}</h3>
+              <small>${animal.english}｜${animal.category}</small>
+            </div>
+          </div>
+          <p class="theme">${animal.theme}</p>
+          <ul class="tiny-facts">
+            <li>${animal.facts[0]}</li>
+            <li>${animal.facts[1]}</li>
+          </ul>
+          <div class="card-actions">
+            <button class="btn small sun" data-play="${animal.id}">用牠猜謎</button>
+            <button class="btn small ghost" data-reveal="${animal.id}">看冷知識</button>
+            <a class="btn small sky" href="${animal.video}" target="_blank" rel="noreferrer">看影片</a>
+          </div>
+        </article>
+      `).join("");
+      document.querySelectorAll("[data-play]").forEach((button) => {
+        button.addEventListener("click", () => chooseAnimal(animals.find((animal) => animal.id === Number(button.dataset.play)), false));
+      });
+      document.querySelectorAll("[data-reveal]").forEach((button) => {
+        button.addEventListener("click", () => chooseAnimal(animals.find((animal) => animal.id === Number(button.dataset.reveal)), true));
+      });
+    }
+
+    $("riddleTab").addEventListener("click", () => setMode("riddle"));
+    $("browseTab").addEventListener("click", () => setMode("browse"));
+    $("randomBrowse").addEventListener("click", nextRiddle);
+    $("revealClue").addEventListener("click", revealClue);
+    $("revealAnswer").addEventListener("click", revealAnswer);
+    $("zoomRiddle").addEventListener("click", toggleZoom);
+    $("fullscreenRiddle").addEventListener("click", toggleFullscreen);
+    document.addEventListener("fullscreenchange", () => {
+      $("fullscreenRiddle").textContent = document.fullscreenElement ? "離開全螢幕" : "全螢幕";
+    });
+    $("nextRiddle").addEventListener("click", nextRiddle);
+    $("closeFacts").addEventListener("click", closeFactsModal);
+    $("modalNext").addEventListener("click", () => {
+      closeFactsModal();
+      nextRiddle();
+    });
+    $("factsModal").addEventListener("click", (event) => {
+      if (event.target === $("factsModal")) closeFactsModal();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeFactsModal();
+    });
+    $("searchBox").addEventListener("input", renderGallery);
+    document.querySelectorAll("[data-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.filter = button.dataset.filter;
+        document.querySelectorAll("[data-filter]").forEach((item) => {
+          item.className = item.dataset.filter === state.filter ? "btn small primary" : "btn small ghost";
+        });
+        renderGallery();
+      });
+    });
+
+    makeGameChoices();
+    renderRiddle();
+    renderGallery();
+  </script>
+</body>
+</html>
